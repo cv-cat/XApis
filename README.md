@@ -376,10 +376,10 @@ docker run -d -p 5006:5006 twitter-platform
 
 ## 🍔 交流群
 
-如果你对爬虫和 AI Agent 感兴趣，请加作者主页 wx 通过邀请加入群聊
+如果你对爬虫和 AI Agent 感兴趣，可以加入群聊一起讨论~
 
-ps: 请加群，人满或者过期 issue | wx 提醒
+ps: 请加群，人满或者过期 issue | wx 提醒 | qq提醒
 
-| group-1 | group-2 | group-3 |
-|:--:|:--:|:--:|
-| <img width="280" alt="group1" src="https://cvcat.site/assets/group1.jpg" /> | <img width="280" alt="group2" src="https://cvcat.site/assets/group2.jpg" /> | <img width="280" alt="group3" src="https://cvcat.site/assets/group3.jpg" /> |
+| group-1 | group-2 | group-3 | group-4 (2000人qq群) |
+|:--:|:--:|:--:|:--:|
+| <img width="280" alt="group1" src="https://cvcat.site/assets/group1.jpg" /> | <img width="280" alt="group2" src="https://cvcat.site/assets/group2.jpg" /> | <img width="280" alt="group3" src="https://cvcat.site/assets/group3.jpg" /> | <img width="280" alt="group3" src="https://cvcat.site/assets/group4.jpg" /> |
