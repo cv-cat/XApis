@@ -31,6 +31,7 @@ Python 的 `len()` 正好就是码点数。
 ``> 引用``              blockquote
 ``---``                 DIVIDER 分割线
 ``![](a.png)``          MEDIA 图片（独占一行）
+``https://x.com/u/status/1``  TWEET 嵌入帖子（链接独占一行）
 ```` ```lang ... ``` ```` MARKDOWN 代码块
 ``**粗**`` ``*斜*`` ``~~删~~`` ``[文字](链接)``  行内样式 / 链接
 =====================  ==========================================
@@ -50,6 +51,7 @@ _OL_RE = re.compile(r'^\d+[.)]\s+(.*)$')
 _QUOTE_RE = re.compile(r'^>\s?(.*)$')
 _DIVIDER_RE = re.compile(r'^(?:-{3,}|\*{3,}|_{3,})$')
 _IMAGE_RE = re.compile(r'^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$')
+_TWEET_RE = re.compile(r'^<?https?://(?:www\.|mobile\.)?(?:x|twitter)\.com/[^/\s]+/status/(\d+)[^\s>]*>?$')
 _FENCE_RE = re.compile(r'^(`{3,}|~{3,})(.*)$')
 
 # 行内记号：顺序即优先级。** 必须排在 * 前面。
@@ -130,6 +132,11 @@ class ContentStateBuilder:
                           'media_id': str(media_id)})
         return self._add_atomic(self.add_entity('MEDIA', {
             'entity_key': str(uuid.uuid4()), 'media_items': items}))
+
+    def add_tweet(self, tweet_id):
+        """嵌入帖子：编辑器「插入 → 帖子」存成 TWEET 实体，只带 tweet_id（读接口返回的是驼峰 tweetId）。"""
+        return self._add_atomic(self.add_entity(
+            'TWEET', {'tweet_id': str(tweet_id)}, 'Immutable'))
 
     def add_code(self, code: str, language: str = ''):
         """代码块：编辑器「插入 → 代码」存成 MARKDOWN 实体，内容是整段围栏。"""
@@ -230,6 +237,11 @@ def markdown_to_content_state(markdown: str, upload_image=None,
 
         if _DIVIDER_RE.match(stripped):
             builder.add_divider()
+            continue
+
+        tweet = _TWEET_RE.match(stripped)
+        if tweet:
+            builder.add_tweet(tweet.group(1))
             continue
 
         image = _IMAGE_RE.match(stripped)
