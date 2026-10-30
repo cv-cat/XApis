@@ -122,8 +122,10 @@ class XJetfuelLoginApi:
     # 每一步都带 x-client-transaction-id。
     JF_HOST = 'https://jf.x.com'
     JF_BASE = f'{JF_HOST}/onboarding/web'
-    LANDING_URL = f'{JF_BASE}/landing'
-    PASSKEY_URL = f'{JF_BASE}/remotes/passkey_one_fa?form_id=landing'
+    # 2026-10-24 HAR: the landing route is /onboarding/web with mode=login.
+    LANDING_URL = f'{JF_BASE}?redirect_after_login=%2Fhome&mode=login'
+    PASSKEY_URL = f'{JF_BASE}/remotes/passkey_one_fa'
+    LOGIN_PAGE_URL = 'https://x.com/i/jf/onboarding/web?redirect_after_login=%2Fhome&mode=login'
     ACTION_BASE = f'{JF_BASE}/actions/'
     BEGIN_URL = f'{ACTION_BASE}begin_login'
     ENTER_PWD_URL = f'{ACTION_BASE}login_enter_password'
@@ -532,7 +534,7 @@ class XJetfuelLoginApi:
 
         每个 GET 都带 XCTID（同源之后浏览器就是这么发的）。
         """
-        self.session.get('https://x.com/', headers=self._navigation_headers(),
+        self.session.get(self.LOGIN_PAGE_URL, headers=self._navigation_headers(),
                          proxies=self.proxies, timeout=30)
         # 浏览器带的客户端 cookie：dnt 偏好 + __cuid 前端设备 id（本地生成）
         self.session.cookies.set('dnt', '1', domain='.x.com')
@@ -548,7 +550,7 @@ class XJetfuelLoginApi:
                 self.session.cookies.set('gt', self.guest_token, domain='.x.com')
 
         for url, path in (
-            (self.LANDING_URL, '/onboarding/web/landing'),
+            (self.LANDING_URL, '/onboarding/web'),
             (self.PASSKEY_URL, '/onboarding/web/remotes/passkey_one_fa'),
         ):
             self.session.get(url,
@@ -568,7 +570,7 @@ class XJetfuelLoginApi:
 
     def begin_login(self, username: str) -> str:
         """提交用户名，拿 session_token（下一步一般是 login_enter_password）。"""
-        step = self._post_action('begin_login', {'username_or_email': username})
+        step = self._post_action('begin_login', {'username_or_email': username, 'password': ''})
         if step['status'] != 200 or not step['session_token']:
             self._classify_failure(step['strings'], step['status'], step['resp'].text,
                                    step['resp'].headers)
@@ -594,7 +596,7 @@ class XJetfuelLoginApi:
         没给就抛 `LoginChallenge`（带 action 名 + session_token，调用方可用 `submit_action` 续跑）。
         """
         self._prime()
-        step = self._post_action('begin_login', {'username_or_email': username})
+        step = self._post_action('begin_login', {'username_or_email': username, 'password': ''})
         if step['status'] != 200 or not step['session_token']:
             self._classify_failure(step['strings'], step['status'], step['resp'].text,
                                    step['resp'].headers)

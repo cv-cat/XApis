@@ -1,0 +1,6 @@
+# Optional localhost alias matching the in-app development preview.
+# Usage: docker compose -f compose.yaml -f compose.local.yaml up -d --build --wait
+services:
+  web:
+    ports:
+      - '127.0.0.1:8765:8000'

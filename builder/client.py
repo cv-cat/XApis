@@ -16,6 +16,7 @@ API 模块把 `import requests` 换成 `from builder import client` 即可。
 """
 
 from urllib.parse import urlparse
+import os
 
 from curl_cffi import requests as _cffi
 
@@ -67,14 +68,26 @@ def _apply_fetch_headers(url: str, kwargs: dict):
 
 
 def get(url, **kwargs):
+    _require_proxy(kwargs)
     kwargs.setdefault('impersonate', IMPERSONATE)
     _apply_fetch_headers(url, kwargs)
+    from builder import gateway
+    if gateway.enabled():
+        return gateway.request('GET', url, **kwargs)
+    if kwargs.get('proxies'):
+        kwargs['proxies'] = {k:v for k,v in kwargs['proxies'].items() if not k.startswith('_')}
     return _cffi.get(url, **kwargs)
 
 
 def post(url, **kwargs):
+    _require_proxy(kwargs)
     kwargs.setdefault('impersonate', IMPERSONATE)
     _apply_fetch_headers(url, kwargs)
+    from builder import gateway
+    if gateway.enabled():
+        return gateway.request('POST', url, **kwargs)
+    if kwargs.get('proxies'):
+        kwargs['proxies'] = {k:v for k,v in kwargs['proxies'].items() if not k.startswith('_')}
     return _cffi.post(url, **kwargs)
 
 
@@ -84,4 +97,12 @@ def session(impersonate=None):
     ``impersonate`` 可按调用链覆盖默认浏览器版本。默认仍保持全局
     ``IMPERSONATE``，登录等对版本敏感的链路可单独跟随 DevTools 实抓。
     """
+    from builder import gateway
+    if gateway.enabled():
+        return gateway.Session()
     return _cffi.Session(impersonate=impersonate or IMPERSONATE)
+
+
+def _require_proxy(kwargs):
+    if os.getenv('X_REQUIRE_PROXY') == '1' and not (kwargs.get('proxies') or {}).get('https'):
+        raise ValueError('必须绑定代理后才能请求 X')

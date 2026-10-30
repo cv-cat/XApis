@@ -1,0 +1,19 @@
+name: xapis-tests
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: disposable-test-root
+      MYSQL_DATABASE: xapis_test
+      MYSQL_USER: xapis
+      MYSQL_PASSWORD: disposable-test-password
+    ports: ['127.0.0.1:3307:3306']
+    volumes: [mysql-test-data:/var/lib/mysql]
+    healthcheck:
+      test: ['CMD-SHELL', 'MYSQL_PWD=$$MYSQL_PASSWORD mysqladmin ping -h 127.0.0.1 -u xapis --silent']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+volumes:
+  mysql-test-data:

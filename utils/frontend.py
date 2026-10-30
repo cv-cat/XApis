@@ -14,6 +14,7 @@ X 目前同时在跑两套前端：
 """
 
 import re
+import os
 
 import requests
 
@@ -66,14 +67,15 @@ def fetch_shell_html(session: requests.Session = None, proxies: dict = None) -> 
     materials; retry a few times when the latter is selected instead of
     treating an otherwise healthy 200 response as permanent drift.
     """
-    get = (session or requests).get
+    from builder import client
+    get = (session or client).get
     last_url = SHELL_URL
     # ``/i/flow/login`` is currently A/B-routed between the legacy
     # client-web shell (which contains the XCTID materials) and the newer
     # x-web shell (which does not).  Five tries still occasionally lose to
     # the rollout; use a bounded larger retry budget so a transient A/B draw
     # does not abort an otherwise valid pure-login request.
-    max_attempts = 12
+    max_attempts = max(1, min(12, int(os.getenv('X_SHELL_ATTEMPTS', '12'))))
     for _ in range(max_attempts):
         resp = get(SHELL_URL, headers=shell_headers(), proxies=proxies, timeout=30)
         resp.raise_for_status()
@@ -187,7 +189,8 @@ def parse_all_assets(html: str) -> dict:
 
 
 def fetch_chunk(url: str, session: requests.Session = None, proxies: dict = None) -> str:
-    get = (session or requests).get
+    from builder import client
+    get = (session or client).get
     resp = get(url, headers={'user-agent': get_profile()['ua'],
                              'accept': '*/*',
                              'referer': 'https://x.com/'},

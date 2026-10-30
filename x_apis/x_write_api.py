@@ -59,7 +59,10 @@ def _rest_post(auth, api: str, data: dict) -> dict:
                        data=Params().update_params(data).get(),
                        proxies=auth.proxies, timeout=30)
     resp.raise_for_status()
-    return resp.json()
+    result = resp.json()
+    if result.get('errors'):
+        raise GraphQLError(api, result['errors'], result)
+    return result
 
 
 class XWriteAPI:

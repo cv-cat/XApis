@@ -4,3 +4,12 @@ loguru>=0.7.0
 openpyxl>=3.1.0
 # 传输层：curl_cffi 提供 Chrome TLS/HTTP2 指纹与浏览器一致（所有读写接口 + 登录流都走它）
 curl_cffi>=0.7.0
+fastapi>=0.115,<1
+uvicorn>=0.32,<1
+cryptography>=44,<47
+python-multipart>=0.0.20,<1
+feedparser>=6.0.11,<7
+beautifulsoup4>=4.12,<5
+urllib3>=2.3,<3
+PyMySQL>=1.1,<2
+tzdata>=2026.1

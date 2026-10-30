@@ -81,6 +81,15 @@ class XMediaAPI:
 
         curl_cffi ≥ 0.7 移除了 `files=` 参数，改用 `CurlMime` 对象。
         """
+        from builder import gateway
+        if gateway.enabled():
+            resp = client.post(
+                UPLOAD_URL, headers=_upload_headers(auth), cookies=auth.cookie,
+                params={'command': 'APPEND', 'media_id': media_id, 'segment_index': str(segment_index)},
+                files={'media': ('blob', chunk, 'application/octet-stream')},
+                proxies=auth.proxies, timeout=120)
+            resp.raise_for_status()
+            return resp
         from curl_cffi import CurlMime
         mime = CurlMime()
         mime.addpart(name='media', data=chunk,

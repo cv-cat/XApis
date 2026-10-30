@@ -103,8 +103,12 @@ class Header:
 
         path 必须是**不含 query 的 pathname**——前端就是这么算的，带上 query 会校验不过。
         """
-        return self.set_header('x-client-transaction-id',
-                               auth.client_transaction_id(method, path))
+        value = auth.client_transaction_id(method, path)
+        # Signing-material initialization may perform reads. Take csrf from the
+        # same final auth state that will supply the outgoing Cookie header.
+        if 'x-csrf-token' in self.headers:
+            self.headers['x-csrf-token'] = auth.ct0
+        return self.set_header('x-client-transaction-id', value)
 
     def with_att(self, auth):
         """登录流专用：服务端第一步下发 `att` Cookie，后续每步原样回传成 `x-att` 头。"""

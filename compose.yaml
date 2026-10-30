@@ -1,0 +1,113 @@
+name: xapis
+services:
+  init-secrets:
+    image: xapis-web:local
+    pull_policy: never
+    command: ['python', '-m', 'console.bootstrap']
+    volumes:
+      - mysql-user-secret:/secrets/mysql
+      - mysql-root-secret:/secrets/root
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    depends_on:
+      init-secrets:
+        condition: service_completed_successfully
+    environment:
+      MYSQL_DATABASE: xapis
+      MYSQL_USER: xapis
+      MYSQL_PASSWORD_FILE: /run/mysql-user/password
+      MYSQL_ROOT_PASSWORD_FILE: /run/mysql-root/password
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - mysql-user-secret:/run/mysql-user:ro
+      - mysql-root-secret:/run/mysql-root:ro
+    networks: [internal]
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    healthcheck:
+      test: ['CMD-SHELL', 'MYSQL_PWD=$$(cat /run/mysql-user/password) mysql -h 127.0.0.1 -u xapis -D xapis -e "SELECT 1" >/dev/null']
+      interval: 5s
+      timeout: 4s
+      retries: 40
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+  gateway:
+    image: xapis-gateway:local
+    build: ./gateway
+    restart: unless-stopped
+    init: true
+    volumes:
+      - gateway-secret:/shared
+    networks: [internal, outbound]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+  web:
+    image: xapis-web:local
+    build: .
+    restart: unless-stopped
+    init: true
+    depends_on:
+      gateway:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    ports:
+      - '${CONSOLE_BIND:-127.0.0.1}:${CONSOLE_PORT:-8000}:8000'
+    environment:
+      CONSOLE_DATA_DIR: /app/data
+      CONSOLE_PUBLIC_URL: '${CONSOLE_PUBLIC_URL:-}'
+      CONSOLE_COOKIE_SECURE: '${CONSOLE_COOKIE_SECURE:-0}'
+      CONSOLE_PRIVATE_AI_HOSTS: '${CONSOLE_PRIVATE_AI_HOSTS:-}'
+      CONSOLE_DB_HOST: mysql
+      CONSOLE_DB_PORT: '3306'
+      CONSOLE_DB_NAME: xapis
+      CONSOLE_DB_USER: xapis
+      CONSOLE_DB_PASSWORD_FILE: /secrets/mysql/password
+      X_GATEWAY_URL: http://gateway:8090
+      X_GATEWAY_TOKEN_FILE: /shared/gateway.token
+      X_REQUIRE_PROXY: '1'
+    volumes:
+      - console-data:/app/data
+      - gateway-secret:/shared:ro
+      - mysql-user-secret:/secrets/mysql:ro
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    networks: [internal, outbound]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+volumes:
+  console-data:
+  gateway-secret:
+  mysql-data:
+  mysql-user-secret:
+  mysql-root-secret:
+networks:
+  internal:
+    internal: true
+  outbound:

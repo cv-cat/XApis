@@ -30,7 +30,8 @@ NODE = os.environ.get('NODE_BIN', 'node')
 
 def fetch_challenge(session: requests.Session = None, proxies: dict = None,
                     url: str = None) -> str:
-    get = (session or requests).get
+    from builder import client
+    get = (session or client).get
     resp = get(url or JS_INST_URL,
                headers={'user-agent': get_profile()['ua'],
                         'accept': '*/*',

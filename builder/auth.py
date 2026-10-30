@@ -119,7 +119,10 @@ class XAuth:
         if self._transaction is None:
             try:
                 self._transaction = ClientTransaction.from_network(
-                    proxies=self.proxies)
+                    # Public signing-material requests are anonymous. Login HTML
+                    # clears ct0; that deletion must not alter the account session.
+                    proxies={k: v for k, v in (self.proxies or {}).items()
+                             if k != '_on_cookies'} or None)
             except Exception:
                 # The token algorithm is local; only its public animation
                 # materials are fetched.  If that unrelated shell fetch is
